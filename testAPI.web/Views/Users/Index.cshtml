@@ -1,0 +1,88 @@
+@model List<testAPI.api.domain.DTOs.User.UserResponseDto>
+@{
+    ViewData["Title"] = "إدارة المستخدمين";
+}
+
+<div dir="rtl">
+    <div class="page-header">
+        <div>
+            <h2><i class="bi bi-people"></i> إدارة المستخدمين</h2>
+            <span class="hint">@Model.Count مستخدم مسجل في النظام</span>
+        </div>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> إنشاء مستخدم جديد
+        </a>
+    </div>
+
+    <div class="app-card">
+        <table class="app-table">
+            <thead>
+                <tr>
+                    <th>الاسم الكامل</th>
+                    <th>اسم المستخدم</th>
+                    <th>البريد الإلكتروني</th>
+                    <th>رقم الهاتف</th>
+                    <th>الدور</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td><strong>@user.FullName</strong></td>
+                        <td>@user.UserName</td>
+                        <td>@user.Email</td>
+                        <td>@user.PhoneNumber</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(user.RoleName))
+                            {
+                                <span class="status-badge" style="background: #ede9fe; color: #7c3aed;">@user.RoleName</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (user.IsLocked == true)
+                            {
+                                <span class="status-badge locked"><i class="bi bi-lock-fill"></i> مقفل</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge active"><i class="bi bi-unlock-fill"></i> نشط</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="action-group">
+                                <a asp-action="Edit" asp-route-id="@user.Id" class="btn-action edit" title="تعديل">
+                                    <i class="bi bi-pencil"></i> تعديل
+                                </a>
+                                <a asp-action="ResetPassword" asp-route-id="@user.Id" class="btn-action" title="كلمة السر">
+                                    <i class="bi bi-key"></i>
+                                </a>
+
+                                <form id="toggleLockForm_@user.Id" asp-action="ToggleLock" asp-route-id="@user.Id" method="post" style="display:inline;">
+                                    <div class="form-check form-switch d-inline-block align-middle">
+                                        <input class="form-check-input" type="checkbox" id="switch_@user.Id"
+                                               @(user.IsLocked != true ? "checked" : "")
+                                               onchange="document.getElementById('toggleLockForm_@user.Id').submit();"
+                                               title="@(user.IsLocked == true ? "فتح الحساب" : "قفل الحساب")">
+                                    </div>
+                                </form>
+
+                                <form asp-action="Delete" asp-route-id="@user.Id" method="post" style="display:inline;" onsubmit="return confirm('تأكيد الحذف؟');">
+                                    <button type="submit" class="btn-action danger" title="حذف">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

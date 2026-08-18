@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace testAPI.web.Controllers;
 
-public class AccountController : Controller
+public class AccountController : BaseController
 {
     private readonly IAuthApiService _authApiService;
 
@@ -133,46 +133,7 @@ public class AccountController : Controller
         return await Logout();
     }
 
-    private async Task SignInUserWithJwtAsync(string token, string username, bool isPersistent)
-    {
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.Name, username),
-            new Claim("jwt_token", token)
-        };
 
-        try
-        {
-            var handler = new JwtSecurityTokenHandler();
-            if (handler.CanReadToken(token))
-            {
-                var jwtToken = handler.ReadJwtToken(token);
-                var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub")?.Value;
-                var role = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role")?.Value;
-                var name = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName || c.Type == "name")?.Value;
-
-                if (!string.IsNullOrEmpty(userId)) claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
-                if (!string.IsNullOrEmpty(role)) claims.Add(new Claim(ClaimTypes.Role, role));
-                if (!string.IsNullOrEmpty(name)) claims.Add(new Claim(ClaimTypes.GivenName, name));
-            }
-        }
-        catch
-        {
-            // If token parsing fails, fallback to basic claims
-        }
-
-        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var authProperties = new AuthenticationProperties
-        {
-            IsPersistent = isPersistent,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
-        };
-
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(claimsIdentity),
-            authProperties);
-    }
 
     private IActionResult RedirectToLocal(string? returnUrl)
     {

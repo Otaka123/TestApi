@@ -37,19 +37,9 @@ public class RoleClaimsController : ControllerBase
 
             var allClaimCategories = new
             {
-                VisitClaims = ClaimStore.VisitClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                HistoryClaims = ClaimStore.HistoryClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                CycleResultsClaims = ClaimStore.CycleResultsClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
+                HomeClaims = ClaimStore.HomeClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
                 RolesClaims = ClaimStore.RolesClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                UsersClaims = ClaimStore.UsersClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                MessagesClaims = ClaimStore.MessagesClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                CallClaims = ClaimStore.CallClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                WebsiteClaims = ClaimStore.WebsiteClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                ImprovementChanceClaims = ClaimStore.ImprovementChance.Select(c => new { c.Type, c.Value }).ToList(),
-                AuthorityReplyClaims = ClaimStore.AuthorityReplyClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                CycleClaims = ClaimStore.CycleClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                SettingsClaims = ClaimStore.SettingsClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                AiTrainingClaims = ClaimStore.AiTrainingClaimsList.Select(c => new { c.Type, c.Value }).ToList()
+                UsersClaims = ClaimStore.UsersClaimsList.Select(c => new { c.Type, c.Value }).ToList()
             };
 
             return Ok(new
@@ -107,19 +97,9 @@ public class RoleClaimsController : ControllerBase
         {
             var allCategories = new
             {
-                VisitClaims = ClaimStore.VisitClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                HistoryClaims = ClaimStore.HistoryClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                CycleResultsClaims = ClaimStore.CycleResultsClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
+                HomeClaims = ClaimStore.HomeClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
                 RolesClaims = ClaimStore.RolesClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                UsersClaims = ClaimStore.UsersClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                MessagesClaims = ClaimStore.MessagesClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                CallClaims = ClaimStore.CallClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                WebsiteClaims = ClaimStore.WebsiteClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                ImprovementChanceClaims = ClaimStore.ImprovementChance.Select(c => new { c.Type, c.Value }).ToList(),
-                AuthorityReplyClaims = ClaimStore.AuthorityReplyClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                CycleClaims = ClaimStore.CycleClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                SettingsClaims = ClaimStore.SettingsClaimsList.Select(c => new { c.Type, c.Value }).ToList(),
-                AiTrainingClaims = ClaimStore.AiTrainingClaimsList.Select(c => new { c.Type, c.Value }).ToList()
+                UsersClaims = ClaimStore.UsersClaimsList.Select(c => new { c.Type, c.Value }).ToList()
             };
 
             return Ok(new

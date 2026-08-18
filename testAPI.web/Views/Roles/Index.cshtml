@@ -1,0 +1,67 @@
+@model List<testAPI.api.domain.DTOs.Role.RoleDTO>
+@{
+    ViewData["Title"] = "إدارة الأدوار";
+}
+
+<div dir="rtl">
+    <div class="page-header">
+        <div>
+            <h2><i class="bi bi-shield-lock"></i> إدارة الأدوار</h2>
+            <span class="hint">@Model.Count دور مسجل في النظام</span>
+        </div>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> إنشاء دور جديد
+        </a>
+    </div>
+
+    <div class="app-card">
+        <table class="app-table">
+            <thead>
+                <tr>
+                    <th>المعرف</th>
+                    <th>اسم الدور</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><strong>@item.Id</strong></td>
+                        <td>
+                            <span class="status-badge" style="background: var(--primary-soft); color: var(--primary);">
+                                @item.Name
+                            </span>
+                        </td>
+                        <td>
+                            @if (item.IsDeleted)
+                            {
+                                <span class="status-badge deleted"><i class="bi bi-x-circle"></i> محذوف</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge active"><i class="bi bi-check-circle"></i> فعال</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="action-group">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn-action edit">
+                                    <i class="bi bi-pencil"></i> تعديل
+                                </a>
+                                <a asp-action="ManageClaims" asp-route-id="@item.Id" class="btn-action info">
+                                    <i class="bi bi-key"></i> الصلاحيات
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف هذا الدور؟');">
+                                    <button type="submit" class="btn-action danger">
+                                        <i class="bi bi-trash"></i> حذف
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

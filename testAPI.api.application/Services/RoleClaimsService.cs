@@ -9,10 +9,12 @@ namespace testAPI.api.application.Services
     public class RoleClaimsService : IRoleClaimsService
     {
         private readonly RoleManager<AppRole> _roleManager;
+        private readonly UserManager<AppUser> _userManager;
 
-        public RoleClaimsService(RoleManager<AppRole> roleManager)
+        public RoleClaimsService(RoleManager<AppRole> roleManager, UserManager<AppUser> userManager)
         {
             _roleManager = roleManager;
+            _userManager = userManager;
         }
 
         public async Task<ClaimsModel?> GetClaimsForRoleAsync(int roleId)
@@ -25,19 +27,9 @@ namespace testAPI.api.application.Services
             return new ClaimsModel
             {
                 RoleId = role.Id,
-                VisitClaimsList = Build(ClaimStore.VisitClaimsList, existingClaims),
-                HistoryClaimsList = Build(ClaimStore.HistoryClaimsList, existingClaims),
-                CycleResultsClaimsList = Build(ClaimStore.CycleResultsClaimsList, existingClaims),
+                HomeClaimsList = Build(ClaimStore.HomeClaimsList, existingClaims),
                 RolesClaimsList = Build(ClaimStore.RolesClaimsList, existingClaims),
-                UsersClaimsList = Build(ClaimStore.UsersClaimsList, existingClaims),
-                MessagesClaimsList = Build(ClaimStore.MessagesClaimsList, existingClaims),
-                CallClaimsList = Build(ClaimStore.CallClaimsList, existingClaims),
-                WebsiteClaimsList = Build(ClaimStore.WebsiteClaimsList, existingClaims),
-                AuthorityReplyClaimsList = Build(ClaimStore.AuthorityReplyClaimsList, existingClaims),
-                AiTrainingClaimsList = Build(ClaimStore.AiTrainingClaimsList, existingClaims),
-                CycleClaimsList = Build(ClaimStore.CycleClaimsList, existingClaims),
-                ImprovementChance = Build(ClaimStore.ImprovementChance, existingClaims),
-                SettingsClaimsList = Build(ClaimStore.SettingsClaimsList, existingClaims)
+                UsersClaimsList = Build(ClaimStore.UsersClaimsList, existingClaims)
             };
         }
 
@@ -52,11 +44,9 @@ namespace testAPI.api.application.Services
 
             var allGroups = new[]
             {
-                model.VisitClaimsList, model.HistoryClaimsList, model.CycleResultsClaimsList,
-                model.RolesClaimsList, model.UsersClaimsList, model.MessagesClaimsList,
-                model.CallClaimsList, model.WebsiteClaimsList, model.ImprovementChance,
-                model.AuthorityReplyClaimsList, model.AiTrainingClaimsList,
-                model.CycleClaimsList, model.SettingsClaimsList
+                model.HomeClaimsList,
+                model.RolesClaimsList,
+                model.UsersClaimsList
             };
 
             foreach (var group in allGroups)
@@ -66,6 +56,14 @@ namespace testAPI.api.application.Services
                     if (claimItem.IsSelected)
                         await _roleManager.AddClaimAsync(role, new Claim(claimItem.ClaimType, claimItem.Label ?? ""));
                 }
+            }
+
+            // ✅ تحديث SecurityStamp لجميع المستخدمين في هذا الدور
+            // هذا سيجبر المستخدمين على تحديث الـ Claims عند الطلب التالي
+            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name ?? "");
+            foreach (var user in usersInRole)
+            {
+                await _userManager.UpdateSecurityStampAsync(user);
             }
 
             return true;

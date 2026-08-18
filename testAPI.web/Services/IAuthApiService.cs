@@ -7,4 +7,5 @@ public interface IAuthApiService
     Task<AuthResultDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default);
     Task<AuthResultDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default);
     Task<AuthResultDto> LogoutAsync(string? token, CancellationToken cancellationToken = default);
+    Task<AuthResultDto> GetCurrentUserAsync(string token, CancellationToken cancellationToken = default);
 }

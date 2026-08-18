@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>schema — Interactive Schema ERD</title>
+<style>
+
+:root {
+  --bg:            #f6f8fb;
+  --panel:         #ffffff;
+  --border:        #d8dee5;
+  --text:          #1f2937;
+  --muted:         #6b7280;
+  --primary:       #2563eb;
+  --primary-soft:  #dbeafe;
+  --accent:        #7c3aed;
+  --pk-bg:         #fff4e5;
+  --pk-fg:         #c2410c;
+  --fk-bg:         #e0f2fe;
+  --fk-fg:         #0369a1;
+  --ok:            #059669;
+  --warn:          #d97706;
+  --danger:        #dc2626;
+  --shadow:        0 1px 2px rgba(15,23,42,.06), 0 4px 16px rgba(15,23,42,.06);
+  --radius:        10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:            #0f172a;
+    --panel:         #111827;
+    --border:        #1f2937;
+    --text:          #e5e7eb;
+    --muted:         #94a3b8;
+    --primary:       #60a5fa;
+    --primary-soft:  #1e3a8a;
+    --accent:        #a78bfa;
+    --pk-bg:         #3f2a10;
+    --pk-fg:         #fb923c;
+    --fk-bg:         #0c3550;
+    --fk-fg:         #38bdf8;
+    --shadow:        0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
+  }
+  svg text { fill: #e5e7eb !important; }
+  svg a polygon, svg a path, svg a ellipse, svg a rect { stroke: inherit !important; }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, "Segoe UI Arabic", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ----- Top bar ----- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  box-shadow: var(--shadow);
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.topbar .spacer { flex: 1 1 auto; min-width: 10px; }
+.stats {
+  display: inline-flex;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.stats b { color: var(--text); font-weight: 600; }
+.quicklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  width: 100%;
+  max-height: 110px;
+  overflow: auto;
+  padding: 4px 2px;
+}
+.quicklist a {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: transform .08s ease, border-color .12s ease;
+}
+.quicklist a:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary);
+}
+
+/* ----- Main layout ----- */
+.container { max-width: 1500px; margin: 0 auto; padding: 24px; }
+.section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+.section-title h2 { margin: 0; font-size: 20px; }
+.section-title .hint { color: var(--muted); font-size: 13px; }
+
+/* ----- Diagram card ----- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.diagram-wrap {
+  width: 100%;
+  overflow: auto;
+  background:
+    linear-gradient(45deg, rgba(127,127,127,.04) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(127,127,127,.04) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(127,127,127,.04) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(127,127,127,.04) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, 10px 0px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.diagram-wrap svg {
+  display: block;
+  max-width: none;
+  height: auto;
+}
+.diagram-wrap svg a text { cursor: pointer; }
+.diagram-wrap svg a:hover * { filter: brightness(1.08); }
+
+/* ----- Table sections ----- */
+.table-section {
+  scroll-margin-top: 120px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 22px;
+  margin-bottom: 22px;
+  position: relative;
+}
+.table-section h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.table-section h3 .schema-tag {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+.table-meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+.table-meta .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+}
+
+.back-to-diagram {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff !important;
+  box-shadow: var(--shadow);
+}
+.back-to-diagram:hover { opacity: .9; }
+
+.sub-h {
+  margin: 18px 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+
+/* ----- Data grid ----- */
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.grid th, .grid td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.grid th {
+  background: rgba(127,127,127,.06);
+  color: var(--muted);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+.grid tr:hover td { background: rgba(37,99,235,.04); }
+.grid td.mono, .grid th.mono { font-family: "Cascadia Mono", Consolas, monospace; }
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.badge-pk { background: var(--pk-bg); color: var(--pk-fg); }
+.badge-fk { background: var(--fk-bg); color: var(--fk-fg); }
+.badge-uq { background: #dcfce7; color: #166534; }
+.badge-nn { background: #fee2e2; color: var(--danger); }
+.badge-null { background: #f1f5f9; color: var(--muted); }
+.badge-id { background: #ede9fe; color: var(--accent); }
+
+/* ----- Related table links ----- */
+.related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.related a {
+  text-decoration: none;
+  font-size: 13px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--primary);
+  background: var(--panel);
+  transition: background .12s ease, border-color .12s ease;
+}
+.related a:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+.muted { color: var(--muted); font-size: 13px; }
+
+/* ----- Floating button ----- */
+.floating-top {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  z-index: 40;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* ----- Footer ----- */
+.footer {
+  text-align: center;
+  padding: 30px 12px 50px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Warnings panel */
+.warnings {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin: 10px 0 18px;
+}
+.warnings ul { margin: 4px 0 0 18px; padding: 0; }
+@media (prefers-color-scheme: dark) {
+  .warnings { background: #292524; border-color: #78350F; color: #FDE68A; }
+}
+
+/* Smooth scrolling for in-page anchor links */
+html { scroll-behavior: smooth; }
+
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>📐 schema — Interactive Schema ERD</h1>
+  <div class="stats"><span>📊 <b>9</b> tables</span><span>🔗 <b>9</b> foreign keys</span></div>
+  <div class="spacer"></div>
+  <div class="quicklist"><a href="#tbl_CENTER" title="dbo.CENTER (1 cols)">CENTER</a>
+<a href="#tbl_HISTORY" title="dbo.HISTORY (2 cols)">HISTORY</a>
+<a href="#tbl_JOB" title="dbo.JOB (1 cols)">JOB</a>
+<a href="#tbl_RANK" title="dbo.RANK (1 cols)">RANK</a>
+<a href="#tbl_SERVICE" title="dbo.SERVICE (1 cols)">SERVICE</a>
+<a href="#tbl_SERVICECENTER" title="dbo.SERVICECENTER (3 cols)">SERVICECENTER</a>
+<a href="#tbl_SESSION" title="dbo.SESSION (3 cols)">SESSION</a>
+<a href="#tbl_SESSIONDETAILS" title="dbo.SESSIONDETAILS (2 cols)">SESSIONDETAILS</a>
+<a href="#tbl_USER" title="dbo.USER (4 cols)">USER</a></div>
+</header>
+
+<main class="container" id="top">
+  <section id="diagram" class="card" style="scroll-margin-top:120px">
+    <div class="section-title">
+      <h2>🗺️ Entity Relationship Diagram</h2>
+      <span class="hint">Click any table box to jump to its full column definition below.</span>
+    </div>
+    
+    <div class="diagram-wrap" id="diagram-wrap">
+      
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
+ -->
+<!-- Title: ERD Pages: 1 -->
+<svg
+ viewBox="0.00 0.00 410.00 480.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 475.75)">
+<title>ERD</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-475.75 405.75,-475.75 405.75,4 -4,4"/>
+<g id="clust1" class="cluster">
+<title>cluster_g0</title>
+<path fill="#e8f8f5" stroke="#2c3e50" stroke-width="1.2" d="M12,0C12,0 389.75,0 389.75,0 395.75,0 401.75,-6 401.75,-12 401.75,-12 401.75,-459.75 401.75,-459.75 401.75,-465.75 395.75,-471.75 389.75,-471.75 389.75,-471.75 12,-471.75 12,-471.75 6,-471.75 0,-465.75 0,-459.75 0,-459.75 0,-12 0,-12 0,-6 6,0 12,0"/>
+<text xml:space="preserve" text-anchor="start" x="171.62" y="-456.4" font-family="Helvetica,sans-Serif" font-size="13.00"> </text>
+<text xml:space="preserve" text-anchor="start" x="175.38" y="-456.4" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">Group 1</text>
+<text xml:space="preserve" text-anchor="start" x="226.38" y="-456.4" font-family="Helvetica,sans-Serif" font-size="13.00"> </text>
+</g>
+<!-- tbl_CENTER -->
+<g id="node1" class="node">
+<title>tbl_CENTER</title>
+<g id="a_node1"><a href="#tbl_CENTER" xlink:title="dbo.CENTER" target="_top">
+<polygon fill="#2c3e50" stroke="none" points="38.5,-113.5 38.5,-143.75 131,-143.75 131,-113.5 38.5,-113.5"/>
+<text xml:space="preserve" text-anchor="start" x="46.5" y="-125.35" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ffffff">dbo.CENTER</text>
+<polygon fill="#ffffff" stroke="none" points="38.5,-95 38.5,-113.5 131,-113.5 131,-95 38.5,-95"/>
+<text xml:space="preserve" text-anchor="start" x="59.25" y="-101.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#666666">1 cols Â· 1 PK</text>
+<path fill="none" stroke="#2c3e50" d="M49.5,-94C49.5,-94 120,-94 120,-94 126,-94 132,-100 132,-106 132,-106 132,-132.75 132,-132.75 132,-138.75 126,-144.75 120,-144.75 120,-144.75 49.5,-144.75 49.5,-144.75 43.5,-144.75 37.5,-138.75 37.5,-132.75 37.5,-132.75 37.5,-106 37.5,-106 37.5,-100 43.5,-94 49.5,-94"/>
+</a>
+</g>
+</g>
+<!-- tbl_HISTORY -->
+<g id="node2" class="node">
+<title>tbl_HISTORY</title>
+<g id="a_node2"><a href="#tbl_HISTORY" xlink:title="dbo.HISTORY" target="_top">
+<polygon fill="#2c3e50" stroke="none" points="278.75,-353.5 278.75,-383.75 372.75,-383.75 372.75,-353.5 278.75,-353.5"/>
+<text xml:space="preserve" text-anchor="start" x="286.75" y="-365.35" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ffffff">dbo.HISTORY</text>
+<polygon fill="#ffffff" stroke="none" points="278.75,-335 278.75,-353.5 372.75,-353.5 372.75,-335 278.75,-335"/>
+<text xml:space="preserve" text-anchor="start" x="287.13" y="-341.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#666666">2 cols Â· 1 PK Â· 1 FK</text>
+<path fill="none" stroke="#2c3e50" d="M289.75,-334C289.75,-334 361.75,-334 361.75,-334 367.75,-334 373.75,-340 373.75,-346 373.75,-346 373.75,-372.75 373.75,-372.75 373.75,-378.75 367.75,-384.75 361.75,-384.75 361.75,-384.75 289.75,-384.75 289.75,-384.75 283.75,-384.75 277.75,-378.75 277.75,-372.75 277.75,-372.75 277.75,-346 277.75,-346 277.75,-340 283.75,-334 289.75,-334"/>
+</a>
+</g>
+</g>
+<!-- tbl_USER -->
+<g id="node9" class="node">
+<title>tbl_USER</title>
+<g id="a_node9"><a href="#tbl_USER" xlink:title="dbo.USER" target="_top">
+<polygon fill="#922b21" stroke="none" points="148.13,-393.5 148.13,-423.75 233.38,-423.75 233.38,-393.5 148.13,-393.5"/>
+<text xml:space="preserve" text-anchor="start" x="160.75" y="-405.35" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ffffff">dbo.USER</text>
+<polygon fill="#ffffff" stroke="none" points="148.13,-375 148.13,-393.5 233.38,-393.5 233.38,-375 148.13,-375"/>
+<text xml:space="preserve" text-anchor="start" x="152.13" y="-381.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#666666">4 cols Â· 1 PK Â· 3 FK</text>
+<path fill="none" stroke="#7b241c" d="M159.13,-374C159.13,-374 222.38,-374 222.38,-374 228.38,-374 234.38,-380 234.38,-386 234.38,-386 234.38,-412.75 234.38,-412.75 234.38,-418.75 228.38,-424.75 222.38,-424.75 222.38,-424.75 159.13,-424.75 159.13,-424.75 153.13,-424.75 147.13,-418.75 147.13,-412.75 147.13,-412.75 147.13,-386 147.13,-386 147.13,-380 153.13,-374 159.13,-374"/>
+</a>
+</g>
+</g>
+<!-- tbl_HISTORY&#45;&gt;tbl_USER -->
+<g id="edge4" class="edge">
+<title>tbl_HISTORY:e&#45;&gt;tbl_USER:w</title>
+<path fill="none" stroke="#c0392b" stroke-width="1.2" d="M381.7,-379C381.7,-379 148.2,-379 148.2,-379"/>
+<polygon fill="#c0392b" stroke="#c0392b" stroke-width="1.2" points="148.08,-379 139.58,-375.18 143.42,-379 139.98,-379 139.98,-379 139.98,-379 143.42,-379 139.58,-382.83 148.08,-379"/>
+<text xml:space="preserve" text-anchor="middle" x="153.67" y="-368.54" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;1 &#160;</text>
+<text xml:space="preserve" text-anchor="middle" x="367.2" y="-382.06" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;N &#160;</text>
+</g>
+<!-- tbl_JOB -->
+<g id="node3" class="node">
+<title>tbl_JOB</title>
+<g id="a_node3"><a href="#tbl_JOB" xlink:title="dbo.JOB" target="_top">
+<polygon fill="#2c3e50" stroke="none" points="168.62,-43.5 168.62,-73.75 234.88,-73.75 234.88,-43.5 168.62,-43.5"/>
+<text xml:space="preserve" text-anchor="start" x="176.62" y="-55.35" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ffffff">dbo.JOB</text>
+<polygon fill="#ffffff" stroke="none" points="168.62,-25 168.62,-43.5 234.88,-43.5 234.88,-25 168.62,-25"/>
+<text xml:space="preserve" text-anchor="start" x="176.25" y="-31.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#666666">1 cols Â· 1 PK</text>
+<path fill="none" stroke="#2c3e50" d="M179.62,-24C179.62,-24 223.88,-24 223.88,-24 229.88,-24 235.88,-30 235.88,-36 235.88,-36 235.88,-62.75 235.88,-62.75 235.88,-68.75 229.88,-74.75 223.88,-74.75 223.88,-74.75 179.62,-74.75 179.62,-74.75 173.62,-74.75 167.62,-68.75 167.62,-62.75 167.62,-62.75 167.62,-36 167.62,-36 167.62,-30 173.62,-24 179.62,-24"/>
+</a>
+</g>
+</g>
+<!-- tbl_RANK -->
+<g id="node4" class="node">
+<title>tbl_RANK</title>
+<g id="a_node4"><a href="#tbl_RANK" xlink:title="dbo.RANK" target="_top">
+<polygon fill="#2c3e50" stroke="none" points="29,-393.5 29,-423.75 106.5,-423.75 106.5,-393.5 29,-393.5"/>
+<text xml:space="preserve" text-anchor="start" x="37" y="-405.35" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ffffff">dbo.RANK</text>
+<polygon fill="#ffffff" stroke="none" points="29,-375 29,-393.5 106.5,-393.5 106.5,-375 29,-375"/>
+<text xml:space="preserve" text-anchor="start" x="42.25" y="-381.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#666666">1 cols Â· 1 PK</text>
+<path fill="none" stroke="#2c3e50" d="M40,-374C40,-374 95.5,-374 95.5,-374 101.5,-374 107.5,-380 107.5,-386 107.5,-386 107.5,-412.75 107.5,-412.75 107.5,-418.75 101.5,-424.75 95.5,-424.75 95.5,-424.75 40,-424.75 40,-424.75 34,-424.75 28,-418.75 28,-412.75 28,-412.75 28,-386 28,-386 28,-380 34,-374 40,-374"/>
+</a>
+</g>
+</g>
+<!-- tbl_SERVICE -->
+<g id="node5" class="node">
+<title>tbl_SERVICE</title>
+<g id="a_node5"><a href="#tbl_SERVICE" xlink:title="dbo.SERVICE" target="_top">
+<polygon fill="#2c3e50" stroke="none" points="248.38,-123.5 248.38,-153.75 343.12,-153.75 343.12,-123.5 248.38,-123.5"/>
+<text xml:space="preserve" text-anchor="start" x="256.38" y="-135.35" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ffffff">dbo.SERVICE</text>
+<polygon fill="#ffffff" stroke="none" points="248.38,-105 248.38,-123.5 343.12,-123.5 343.12,-105 248.38,-105"/>
+<text xml:space="preserve" text-anchor="start" x="270.25" y="-111.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#666666">1 cols Â· 1 PK</text>
+<path fill="none" stroke="#2c3e50" d="M259.38,-104C259.38,-104 332.12,-104 332.12,-104 338.12,-104 344.12,-110 344.12,-116 344.12,-116 344.12,-142.75 344.12,-142.75 344.12,-148.75 338.12,-154.75 332.12,-154.75 332.12,-154.75 259.38,-154.75 259.38,-154.75 253.38,-154.75 247.38,-148.75 247.38,-142.75 247.38,-142.75 247.38,-116 247.38,-116 247.38,-110 253.38,-104 259.38,-104"/>
+</a>
+</g>
+</g>
+<!-- tbl_SERVICECENTER -->
+<g id="node6" class="node">
+<title>tbl_SERVICECENTER</title>
+<g id="a_node6"><a href="#tbl_SERVICECENTER" xlink:title="dbo.SERVICECENTER" target="_top">
+<polygon fill="#2c3e50" stroke="none" points="58.88,-193.5 58.88,-223.75 204.63,-223.75 204.63,-193.5 58.88,-193.5"/>
+<text xml:space="preserve" text-anchor="start" x="66.88" y="-205.35" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ffffff">dbo.SERVICECENTER</text>
+<polygon fill="#ffffff" stroke="none" points="58.88,-175 58.88,-193.5 204.63,-193.5 204.63,-175 58.88,-175"/>
+<text xml:space="preserve" text-anchor="start" x="93.13" y="-181.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#666666">3 cols Â· 1 PK Â· 2 FK</text>
+<path fill="none" stroke="#2c3e50" d="M69.88,-174C69.88,-174 193.63,-174 193.63,-174 199.63,-174 205.63,-180 205.63,-186 205.63,-186 205.63,-212.75 205.63,-212.75 205.63,-218.75 199.63,-224.75 193.63,-224.75 193.63,-224.75 69.88,-224.75 69.88,-224.75 63.88,-224.75 57.88,-218.75 57.88,-212.75 57.88,-212.75 57.88,-186 57.88,-186 57.88,-180 63.88,-174 69.88,-174"/>
+</a>
+</g>
+</g>
+<!-- tbl_SERVICECENTER&#45;&gt;tbl_CENTER -->
+<g id="edge9" class="edge">
+<title>tbl_SERVICECENTER:e&#45;&gt;tbl_CENTER:w</title>
+<path fill="none" stroke="#555555" stroke-width="1.2" d="M94.94,-199.37C94.94,-199.37 94.94,-128.41 94.94,-128.41"/>
+<polygon fill="#555555" stroke="#555555" stroke-width="1.2" points="94.94,-128.28 98.76,-119.78 94.94,-123.62 94.94,-120.18 94.94,-120.18 94.94,-120.18 94.94,-123.62 91.11,-119.78 94.94,-128.28"/>
+<text xml:space="preserve" text-anchor="middle" x="101.7" y="-130.18" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;1 &#160;</text>
+<text xml:space="preserve" text-anchor="middle" x="88.18" y="-181.17" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;N &#160;</text>
+</g>
+<!-- tbl_SERVICECENTER&#45;&gt;tbl_SERVICE -->
+<g id="edge8" class="edge">
+<title>tbl_SERVICECENTER:e&#45;&gt;tbl_SERVICE:w</title>
+<path fill="none" stroke="#555555" stroke-width="1.2" d="M186.62,-199.37C186.62,-199.37 186.62,-154 186.62,-154 186.62,-154 230.4,-154 230.4,-154"/>
+<polygon fill="#555555" stroke="#555555" stroke-width="1.2" points="230.53,-154 239.03,-157.83 235.18,-154 238.63,-154 238.63,-154 238.63,-154 235.18,-154 239.03,-150.18 230.53,-154"/>
+<text xml:space="preserve" text-anchor="middle" x="224.93" y="-157.06" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;1 &#160;</text>
+<text xml:space="preserve" text-anchor="middle" x="179.86" y="-181.17" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;N &#160;</text>
+</g>
+<!-- tbl_SESSION -->
+<g id="node7" class="node">
+<title>tbl_SESSION</title>
+<g id="a_node7"><a href="#tbl_SESSION" xlink:title="dbo.SESSION" target="_top">
+<polygon fill="#922b21" stroke="none" points="59,-313.5 59,-343.75 154.5,-343.75 154.5,-313.5 59,-313.5"/>
+<text xml:space="preserve" text-anchor="start" x="67" y="-325.35" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ffffff">dbo.SESSION</text>
+<polygon fill="#ffffff" stroke="none" points="59,-295 59,-313.5 154.5,-313.5 154.5,-295 59,-295"/>
+<text xml:space="preserve" text-anchor="start" x="68.13" y="-301.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#666666">3 cols Â· 1 PK Â· 2 FK</text>
+<path fill="none" stroke="#7b241c" d="M70,-294C70,-294 143.5,-294 143.5,-294 149.5,-294 155.5,-300 155.5,-306 155.5,-306 155.5,-332.75 155.5,-332.75 155.5,-338.75 149.5,-344.75 143.5,-344.75 143.5,-344.75 70,-344.75 70,-344.75 64,-344.75 58,-338.75 58,-332.75 58,-332.75 58,-306 58,-306 58,-300 64,-294 70,-294"/>
+</a>
+</g>
+</g>
+<!-- tbl_SESSION&#45;&gt;tbl_SERVICE -->
+<g id="edge6" class="edge">
+<title>tbl_SESSION:e&#45;&gt;tbl_SERVICE:w</title>
+<path fill="none" stroke="#c0392b" stroke-width="1.2" d="M106.75,-319.37C106.75,-319.37 106.75,-236 106.75,-236 106.75,-236 295.75,-236 295.75,-236 295.75,-236 295.75,-138.41 295.75,-138.41"/>
+<polygon fill="#c0392b" stroke="#c0392b" stroke-width="1.2" points="295.75,-138.28 299.58,-129.78 295.75,-133.62 295.75,-130.18 295.75,-130.18 295.75,-130.18 295.75,-133.62 291.93,-129.78 295.75,-138.28"/>
+<text xml:space="preserve" text-anchor="middle" x="302.51" y="-140.18" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;1 &#160;</text>
+<text xml:space="preserve" text-anchor="middle" x="99.99" y="-301.17" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;N &#160;</text>
+</g>
+<!-- tbl_SESSION&#45;&gt;tbl_USER -->
+<g id="edge5" class="edge">
+<title>tbl_SESSION:e&#45;&gt;tbl_USER:w</title>
+<path fill="none" stroke="#c0392b" stroke-width="1.2" d="M155.38,-319.37C155.38,-319.37 155.38,-390.34 155.38,-390.34"/>
+<polygon fill="#c0392b" stroke="#c0392b" stroke-width="1.2" points="155.38,-390.47 151.55,-398.97 155.38,-395.12 155.38,-398.57 155.38,-398.57 155.38,-398.57 155.38,-395.12 159.2,-398.97 155.38,-390.47"/>
+<text xml:space="preserve" text-anchor="middle" x="148.61" y="-381.17" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;1 &#160;</text>
+<text xml:space="preserve" text-anchor="middle" x="162.14" y="-330.18" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;N &#160;</text>
+</g>
+<!-- tbl_SESSIONDETAILS -->
+<g id="node8" class="node">
+<title>tbl_SESSIONDETAILS</title>
+<g id="a_node8"><a href="#tbl_SESSIONDETAILS" xlink:title="dbo.SESSIONDETAILS" target="_top">
+<polygon fill="#2c3e50" stroke="none" points="198.13,-273.5 198.13,-303.75 345.38,-303.75 345.38,-273.5 198.13,-273.5"/>
+<text xml:space="preserve" text-anchor="start" x="206.13" y="-285.35" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00" fill="#ffffff">dbo.SESSIONDETAILS</text>
+<polygon fill="#ffffff" stroke="none" points="198.13,-255 198.13,-273.5 345.38,-273.5 345.38,-255 198.13,-255"/>
+<text xml:space="preserve" text-anchor="start" x="233.13" y="-261.25" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#666666">2 cols Â· 1 PK Â· 1 FK</text>
+<path fill="none" stroke="#2c3e50" d="M209.13,-254C209.13,-254 334.38,-254 334.38,-254 340.38,-254 346.38,-260 346.38,-266 346.38,-266 346.38,-292.75 346.38,-292.75 346.38,-298.75 340.38,-304.75 334.38,-304.75 334.38,-304.75 209.13,-304.75 209.13,-304.75 203.13,-304.75 197.13,-298.75 197.13,-292.75 197.13,-292.75 197.13,-266 197.13,-266 197.13,-260 203.13,-254 209.13,-254"/>
+</a>
+</g>
+</g>
+<!-- tbl_SESSIONDETAILS&#45;&gt;tbl_SESSION -->
+<g id="edge7" class="edge">
+<title>tbl_SESSIONDETAILS:e&#45;&gt;tbl_SESSION:w</title>
+<path fill="none" stroke="#c0392b" stroke-width="1.2" d="M354.3,-299C354.3,-299 59.08,-299 59.08,-299"/>
+<polygon fill="#c0392b" stroke="#c0392b" stroke-width="1.2" points="58.96,-299 50.46,-295.18 54.3,-299 50.86,-299 50.86,-299 50.86,-299 54.3,-299 50.46,-302.83 58.96,-299"/>
+<text xml:space="preserve" text-anchor="middle" x="64.55" y="-288.54" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;1 &#160;</text>
+<text xml:space="preserve" text-anchor="middle" x="339.8" y="-302.06" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;N &#160;</text>
+</g>
+<!-- tbl_USER&#45;&gt;tbl_CENTER -->
+<g id="edge3" class="edge">
+<title>tbl_USER:e&#45;&gt;tbl_CENTER:w</title>
+<path fill="none" stroke="#c0392b" stroke-width="1.2" d="M147.25,-399.38C147.25,-399.38 147.25,-359 147.25,-359 147.25,-359 39.69,-359 39.69,-359 39.69,-359 39.69,-128.41 39.69,-128.41"/>
+<polygon fill="#c0392b" stroke="#c0392b" stroke-width="1.2" points="39.69,-128.28 43.51,-119.78 39.69,-123.62 39.69,-120.18 39.69,-120.18 39.69,-120.18 39.69,-123.62 35.86,-119.78 39.69,-128.28"/>
+<text xml:space="preserve" text-anchor="middle" x="46.45" y="-130.18" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;1 &#160;</text>
+<text xml:space="preserve" text-anchor="middle" x="140.49" y="-381.17" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;N &#160;</text>
+</g>
+<!-- tbl_USER&#45;&gt;tbl_JOB -->
+<g id="edge1" class="edge">
+<title>tbl_USER:e&#45;&gt;tbl_JOB:w</title>
+<path fill="none" stroke="#c0392b" stroke-width="1.2" d="M176.31,-399.38C176.31,-399.38 176.31,-243 176.31,-243 176.31,-243 226.5,-243 226.5,-243 226.5,-243 226.5,-58.41 226.5,-58.41"/>
+<polygon fill="#c0392b" stroke="#c0392b" stroke-width="1.2" points="226.5,-58.28 230.33,-49.78 226.5,-53.62 226.5,-50.18 226.5,-50.18 226.5,-50.18 226.5,-53.62 222.68,-49.78 226.5,-58.28"/>
+<text xml:space="preserve" text-anchor="middle" x="233.26" y="-60.18" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;1 &#160;</text>
+<text xml:space="preserve" text-anchor="middle" x="169.55" y="-381.17" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;N &#160;</text>
+</g>
+<!-- tbl_USER&#45;&gt;tbl_RANK -->
+<g id="edge2" class="edge">
+<title>tbl_USER:e&#45;&gt;tbl_RANK:w</title>
+<path fill="none" stroke="#c0392b" stroke-width="1.2" d="M242.33,-399C242.33,-399 29.08,-399 29.08,-399"/>
+<polygon fill="#c0392b" stroke="#c0392b" stroke-width="1.2" points="28.95,-399 20.45,-395.18 24.3,-399 20.85,-399 20.85,-399 20.85,-399 24.3,-399 20.45,-402.83 28.95,-399"/>
+<text xml:space="preserve" text-anchor="middle" x="34.55" y="-388.54" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;1 &#160;</text>
+<text xml:space="preserve" text-anchor="middle" x="227.83" y="-402.06" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#2c3e50"> &#160;N &#160;</text>
+</g>
+</g>
+</svg>
+
+    </div>
+  </section>
+
+  <section id="tables">
+    <div class="section-title">
+      <h2>📋 Table Definitions</h2>
+      <span class="hint">9 tables — click a name for details. Use the quick-pick in the header or the floating ↑ button to navigate.</span>
+    </div>
+    
+<section class="table-section" id="tbl_CENTER">
+  <a href="#diagram" class="back-to-diagram">← Diagram</a>
+  <h3>
+    <span class="schema-tag">dbo</span>
+    CENTER
+  </h3>
+  <div class="table-meta"><span class="chip">1 columns</span><span class="chip" style="background:var(--pk-bg);color:var(--pk-fg)">PK: CenterId</span><span class="chip">2 incoming</span></div>
+
+  <p><b>Primary key:</b> <span class="badge badge-pk">CLUSTERED</span> <code>PK_CENTER</code> on columns (<code>CenterId</code>)</p>
+
+  <h4 class="sub-h">🔎 Columns (1)</h4>
+  <table class="grid"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>PK</th><th>FK</th><th>Nullable</th><th>Identity</th><th>Default</th><th>Flags</th></tr></thead><tbody><tr><td class="mono">1</td><td class="mono">CenterId</td><td class="mono">INT</td><td><span class="badge badge-pk">PK</span></td><td>&nbsp;</td><td><span class="badge badge-null">NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">PK</td></tr></tbody></table>
+
+  <h4 class="sub-h">➡️ Foreign keys (this table → others)</h4>
+  <p class="muted">This table does not reference any other tables.</p>
+
+  <h4 class="sub-h">⬅️ Referenced by (other tables → this table)</h4>
+  <div class="related">
+<a href="#tbl_USER" title="FK_USER_CENTER: CenterId → ...">⬅️ USER <span class="muted">(FK_USER_CENTER)</span></a>
+<a href="#tbl_SERVICECENTER" title="FK_SERVICECENTER_CENTER: CenterId → ...">⬅️ SERVICECENTER <span class="muted">(FK_SERVICECENTER_CENTER)</span></a>
+</div>
+
+  
+
+</section>
+
+
+
+<section class="table-section" id="tbl_HISTORY">
+  <a href="#diagram" class="back-to-diagram">← Diagram</a>
+  <h3>
+    <span class="schema-tag">dbo</span>
+    HISTORY
+  </h3>
+  <div class="table-meta"><span class="chip">2 columns</span><span class="chip" style="background:var(--pk-bg);color:var(--pk-fg)">PK: HistoryId</span><span class="chip" style="background:var(--fk-bg);color:var(--fk-fg)">1 FK</span></div>
+
+  <p><b>Primary key:</b> <span class="badge badge-pk">CLUSTERED</span> <code>PK_HISTORY</code> on columns (<code>HistoryId</code>)</p>
+
+  <h4 class="sub-h">🔎 Columns (2)</h4>
+  <table class="grid"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>PK</th><th>FK</th><th>Nullable</th><th>Identity</th><th>Default</th><th>Flags</th></tr></thead><tbody><tr><td class="mono">1</td><td class="mono">HistoryId</td><td class="mono">INT</td><td><span class="badge badge-pk">PK</span></td><td>&nbsp;</td><td><span class="badge badge-null">NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">PK</td></tr><tr><td class="mono">2</td><td class="mono"><b>UserId</b></td><td class="mono">INT</td><td>&nbsp;</td><td><span class="badge badge-fk">FK</span></td><td><span class="badge badge-nn">NOT NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">FK</td></tr></tbody></table>
+
+  <h4 class="sub-h">➡️ Foreign keys (this table → others)</h4>
+  <table class="grid"><thead><tr><th>Constraint</th><th>Local column(s)</th><th>→ Parent table</th><th>Parent column(s)</th><th>Cardinality</th><th>On delete</th><th>On update</th></tr></thead><tbody><tr><td class="mono">FK_HISTORY_USER</td><td><code>UserId</code></td><td><a href="#tbl_USER"><b>USER</b></a></td><td><code>UserId</code></td><td>many → to → one</td><td>NO ACTION</td><td>NO ACTION</td></tr></tbody></table>
+
+  <h4 class="sub-h">⬅️ Referenced by (other tables → this table)</h4>
+  <p class="muted">No other tables reference this table.</p>
+
+  
+
+</section>
+
+
+
+<section class="table-section" id="tbl_JOB">
+  <a href="#diagram" class="back-to-diagram">← Diagram</a>
+  <h3>
+    <span class="schema-tag">dbo</span>
+    JOB
+  </h3>
+  <div class="table-meta"><span class="chip">1 columns</span><span class="chip" style="background:var(--pk-bg);color:var(--pk-fg)">PK: JobId</span><span class="chip">1 incoming</span></div>
+
+  <p><b>Primary key:</b> <span class="badge badge-pk">CLUSTERED</span> <code>PK_JOB</code> on columns (<code>JobId</code>)</p>
+
+  <h4 class="sub-h">🔎 Columns (1)</h4>
+  <table class="grid"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>PK</th><th>FK</th><th>Nullable</th><th>Identity</th><th>Default</th><th>Flags</th></tr></thead><tbody><tr><td class="mono">1</td><td class="mono">JobId</td><td class="mono">INT</td><td><span class="badge badge-pk">PK</span></td><td>&nbsp;</td><td><span class="badge badge-null">NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">PK</td></tr></tbody></table>
+
+  <h4 class="sub-h">➡️ Foreign keys (this table → others)</h4>
+  <p class="muted">This table does not reference any other tables.</p>
+
+  <h4 class="sub-h">⬅️ Referenced by (other tables → this table)</h4>
+  <div class="related">
+<a href="#tbl_USER" title="FK_USER_JOB: JobId → ...">⬅️ USER <span class="muted">(FK_USER_JOB)</span></a>
+</div>
+
+  
+
+</section>
+
+
+
+<section class="table-section" id="tbl_RANK">
+  <a href="#diagram" class="back-to-diagram">← Diagram</a>
+  <h3>
+    <span class="schema-tag">dbo</span>
+    RANK
+  </h3>
+  <div class="table-meta"><span class="chip">1 columns</span><span class="chip" style="background:var(--pk-bg);color:var(--pk-fg)">PK: RankId</span><span class="chip">1 incoming</span></div>
+
+  <p><b>Primary key:</b> <span class="badge badge-pk">CLUSTERED</span> <code>PK_RANK</code> on columns (<code>RankId</code>)</p>
+
+  <h4 class="sub-h">🔎 Columns (1)</h4>
+  <table class="grid"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>PK</th><th>FK</th><th>Nullable</th><th>Identity</th><th>Default</th><th>Flags</th></tr></thead><tbody><tr><td class="mono">1</td><td class="mono">RankId</td><td class="mono">INT</td><td><span class="badge badge-pk">PK</span></td><td>&nbsp;</td><td><span class="badge badge-null">NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">PK</td></tr></tbody></table>
+
+  <h4 class="sub-h">➡️ Foreign keys (this table → others)</h4>
+  <p class="muted">This table does not reference any other tables.</p>
+
+  <h4 class="sub-h">⬅️ Referenced by (other tables → this table)</h4>
+  <div class="related">
+<a href="#tbl_USER" title="FK_USER_RANK: RankId → ...">⬅️ USER <span class="muted">(FK_USER_RANK)</span></a>
+</div>
+
+  
+
+</section>
+
+
+
+<section class="table-section" id="tbl_SERVICE">
+  <a href="#diagram" class="back-to-diagram">← Diagram</a>
+  <h3>
+    <span class="schema-tag">dbo</span>
+    SERVICE
+  </h3>
+  <div class="table-meta"><span class="chip">1 columns</span><span class="chip" style="background:var(--pk-bg);color:var(--pk-fg)">PK: ServiceId</span><span class="chip">2 incoming</span></div>
+
+  <p><b>Primary key:</b> <span class="badge badge-pk">CLUSTERED</span> <code>PK_SERVICE</code> on columns (<code>ServiceId</code>)</p>
+
+  <h4 class="sub-h">🔎 Columns (1)</h4>
+  <table class="grid"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>PK</th><th>FK</th><th>Nullable</th><th>Identity</th><th>Default</th><th>Flags</th></tr></thead><tbody><tr><td class="mono">1</td><td class="mono">ServiceId</td><td class="mono">INT</td><td><span class="badge badge-pk">PK</span></td><td>&nbsp;</td><td><span class="badge badge-null">NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">PK</td></tr></tbody></table>
+
+  <h4 class="sub-h">➡️ Foreign keys (this table → others)</h4>
+  <p class="muted">This table does not reference any other tables.</p>
+
+  <h4 class="sub-h">⬅️ Referenced by (other tables → this table)</h4>
+  <div class="related">
+<a href="#tbl_SESSION" title="FK_SESSION_SERVICE: ServiceId → ...">⬅️ SESSION <span class="muted">(FK_SESSION_SERVICE)</span></a>
+<a href="#tbl_SERVICECENTER" title="FK_SERVICECENTER_SERVICE: ServiceId → ...">⬅️ SERVICECENTER <span class="muted">(FK_SERVICECENTER_SERVICE)</span></a>
+</div>
+
+  
+
+</section>
+
+
+
+<section class="table-section" id="tbl_SERVICECENTER">
+  <a href="#diagram" class="back-to-diagram">← Diagram</a>
+  <h3>
+    <span class="schema-tag">dbo</span>
+    SERVICECENTER
+  </h3>
+  <div class="table-meta"><span class="chip">3 columns</span><span class="chip" style="background:var(--pk-bg);color:var(--pk-fg)">PK: ServiceCenterId</span><span class="chip" style="background:var(--fk-bg);color:var(--fk-fg)">2 FK</span></div>
+
+  <p><b>Primary key:</b> <span class="badge badge-pk">CLUSTERED</span> <code>PK_SERVICECENTER</code> on columns (<code>ServiceCenterId</code>)</p>
+
+  <h4 class="sub-h">🔎 Columns (3)</h4>
+  <table class="grid"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>PK</th><th>FK</th><th>Nullable</th><th>Identity</th><th>Default</th><th>Flags</th></tr></thead><tbody><tr><td class="mono">1</td><td class="mono">ServiceCenterId</td><td class="mono">INT</td><td><span class="badge badge-pk">PK</span></td><td>&nbsp;</td><td><span class="badge badge-null">NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">PK</td></tr><tr><td class="mono">2</td><td class="mono"><b>ServiceId</b></td><td class="mono">INT</td><td>&nbsp;</td><td><span class="badge badge-fk">FK</span></td><td><span class="badge badge-nn">NOT NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">FK</td></tr><tr><td class="mono">3</td><td class="mono"><b>CenterId</b></td><td class="mono">INT</td><td>&nbsp;</td><td><span class="badge badge-fk">FK</span></td><td><span class="badge badge-nn">NOT NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">FK</td></tr></tbody></table>
+
+  <h4 class="sub-h">➡️ Foreign keys (this table → others)</h4>
+  <table class="grid"><thead><tr><th>Constraint</th><th>Local column(s)</th><th>→ Parent table</th><th>Parent column(s)</th><th>Cardinality</th><th>On delete</th><th>On update</th></tr></thead><tbody><tr><td class="mono">FK_SERVICECENTER_SERVICE</td><td><code>ServiceId</code></td><td><a href="#tbl_SERVICE"><b>SERVICE</b></a></td><td><code>ServiceId</code></td><td>many → to → one</td><td>NO ACTION</td><td>NO ACTION</td></tr><tr><td class="mono">FK_SERVICECENTER_CENTER</td><td><code>CenterId</code></td><td><a href="#tbl_CENTER"><b>CENTER</b></a></td><td><code>CenterId</code></td><td>many → to → one</td><td>NO ACTION</td><td>NO ACTION</td></tr></tbody></table>
+
+  <h4 class="sub-h">⬅️ Referenced by (other tables → this table)</h4>
+  <p class="muted">No other tables reference this table.</p>
+
+  
+
+</section>
+
+
+
+<section class="table-section" id="tbl_SESSION">
+  <a href="#diagram" class="back-to-diagram">← Diagram</a>
+  <h3>
+    <span class="schema-tag">dbo</span>
+    SESSION
+  </h3>
+  <div class="table-meta"><span class="chip">3 columns</span><span class="chip" style="background:var(--pk-bg);color:var(--pk-fg)">PK: SessionId</span><span class="chip" style="background:var(--fk-bg);color:var(--fk-fg)">2 FK</span><span class="chip">1 incoming</span></div>
+
+  <p><b>Primary key:</b> <span class="badge badge-pk">CLUSTERED</span> <code>PK_SESSION</code> on columns (<code>SessionId</code>)</p>
+
+  <h4 class="sub-h">🔎 Columns (3)</h4>
+  <table class="grid"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>PK</th><th>FK</th><th>Nullable</th><th>Identity</th><th>Default</th><th>Flags</th></tr></thead><tbody><tr><td class="mono">1</td><td class="mono">SessionId</td><td class="mono">INT</td><td><span class="badge badge-pk">PK</span></td><td>&nbsp;</td><td><span class="badge badge-null">NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">PK</td></tr><tr><td class="mono">2</td><td class="mono"><b>UserId</b></td><td class="mono">INT</td><td>&nbsp;</td><td><span class="badge badge-fk">FK</span></td><td><span class="badge badge-nn">NOT NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">FK</td></tr><tr><td class="mono">3</td><td class="mono"><b>ServiceId</b></td><td class="mono">INT</td><td>&nbsp;</td><td><span class="badge badge-fk">FK</span></td><td><span class="badge badge-nn">NOT NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">FK</td></tr></tbody></table>
+
+  <h4 class="sub-h">➡️ Foreign keys (this table → others)</h4>
+  <table class="grid"><thead><tr><th>Constraint</th><th>Local column(s)</th><th>→ Parent table</th><th>Parent column(s)</th><th>Cardinality</th><th>On delete</th><th>On update</th></tr></thead><tbody><tr><td class="mono">FK_SESSION_USER</td><td><code>UserId</code></td><td><a href="#tbl_USER"><b>USER</b></a></td><td><code>UserId</code></td><td>many → to → one</td><td>NO ACTION</td><td>NO ACTION</td></tr><tr><td class="mono">FK_SESSION_SERVICE</td><td><code>ServiceId</code></td><td><a href="#tbl_SERVICE"><b>SERVICE</b></a></td><td><code>ServiceId</code></td><td>many → to → one</td><td>NO ACTION</td><td>NO ACTION</td></tr></tbody></table>
+
+  <h4 class="sub-h">⬅️ Referenced by (other tables → this table)</h4>
+  <div class="related">
+<a href="#tbl_SESSIONDETAILS" title="FK_SESSIONDETAILS_SESSION: SessionId → ...">⬅️ SESSIONDETAILS <span class="muted">(FK_SESSIONDETAILS_SESSION)</span></a>
+</div>
+
+  
+
+</section>
+
+
+
+<section class="table-section" id="tbl_SESSIONDETAILS">
+  <a href="#diagram" class="back-to-diagram">← Diagram</a>
+  <h3>
+    <span class="schema-tag">dbo</span>
+    SESSIONDETAILS
+  </h3>
+  <div class="table-meta"><span class="chip">2 columns</span><span class="chip" style="background:var(--pk-bg);color:var(--pk-fg)">PK: SessionDetailsId</span><span class="chip" style="background:var(--fk-bg);color:var(--fk-fg)">1 FK</span></div>
+
+  <p><b>Primary key:</b> <span class="badge badge-pk">CLUSTERED</span> <code>PK_SESSIONDETAILS</code> on columns (<code>SessionDetailsId</code>)</p>
+
+  <h4 class="sub-h">🔎 Columns (2)</h4>
+  <table class="grid"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>PK</th><th>FK</th><th>Nullable</th><th>Identity</th><th>Default</th><th>Flags</th></tr></thead><tbody><tr><td class="mono">1</td><td class="mono">SessionDetailsId</td><td class="mono">INT</td><td><span class="badge badge-pk">PK</span></td><td>&nbsp;</td><td><span class="badge badge-null">NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">PK</td></tr><tr><td class="mono">2</td><td class="mono"><b>SessionId</b></td><td class="mono">INT</td><td>&nbsp;</td><td><span class="badge badge-fk">FK</span></td><td><span class="badge badge-nn">NOT NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">FK</td></tr></tbody></table>
+
+  <h4 class="sub-h">➡️ Foreign keys (this table → others)</h4>
+  <table class="grid"><thead><tr><th>Constraint</th><th>Local column(s)</th><th>→ Parent table</th><th>Parent column(s)</th><th>Cardinality</th><th>On delete</th><th>On update</th></tr></thead><tbody><tr><td class="mono">FK_SESSIONDETAILS_SESSION</td><td><code>SessionId</code></td><td><a href="#tbl_SESSION"><b>SESSION</b></a></td><td><code>SessionId</code></td><td>many → to → one</td><td>NO ACTION</td><td>NO ACTION</td></tr></tbody></table>
+
+  <h4 class="sub-h">⬅️ Referenced by (other tables → this table)</h4>
+  <p class="muted">No other tables reference this table.</p>
+
+  
+
+</section>
+
+
+
+<section class="table-section" id="tbl_USER">
+  <a href="#diagram" class="back-to-diagram">← Diagram</a>
+  <h3>
+    <span class="schema-tag">dbo</span>
+    USER
+  </h3>
+  <div class="table-meta"><span class="chip">4 columns</span><span class="chip" style="background:var(--pk-bg);color:var(--pk-fg)">PK: UserId</span><span class="chip" style="background:var(--fk-bg);color:var(--fk-fg)">3 FK</span><span class="chip">2 incoming</span></div>
+
+  <p><b>Primary key:</b> <span class="badge badge-pk">CLUSTERED</span> <code>PK_USER</code> on columns (<code>UserId</code>)</p>
+
+  <h4 class="sub-h">🔎 Columns (4)</h4>
+  <table class="grid"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>PK</th><th>FK</th><th>Nullable</th><th>Identity</th><th>Default</th><th>Flags</th></tr></thead><tbody><tr><td class="mono">1</td><td class="mono">UserId</td><td class="mono">INT</td><td><span class="badge badge-pk">PK</span></td><td>&nbsp;</td><td><span class="badge badge-null">NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">PK</td></tr><tr><td class="mono">2</td><td class="mono"><b>JobId</b></td><td class="mono">INT</td><td>&nbsp;</td><td><span class="badge badge-fk">FK</span></td><td><span class="badge badge-nn">NOT NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">FK</td></tr><tr><td class="mono">3</td><td class="mono"><b>RankId</b></td><td class="mono">INT</td><td>&nbsp;</td><td><span class="badge badge-fk">FK</span></td><td><span class="badge badge-nn">NOT NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">FK</td></tr><tr><td class="mono">4</td><td class="mono"><b>CenterId</b></td><td class="mono">INT</td><td>&nbsp;</td><td><span class="badge badge-fk">FK</span></td><td><span class="badge badge-nn">NOT NULL</span></td><td>&nbsp;</td><td class="muted">—</td><td class="muted">FK</td></tr></tbody></table>
+
+  <h4 class="sub-h">➡️ Foreign keys (this table → others)</h4>
+  <table class="grid"><thead><tr><th>Constraint</th><th>Local column(s)</th><th>→ Parent table</th><th>Parent column(s)</th><th>Cardinality</th><th>On delete</th><th>On update</th></tr></thead><tbody><tr><td class="mono">FK_USER_JOB</td><td><code>JobId</code></td><td><a href="#tbl_JOB"><b>JOB</b></a></td><td><code>JobId</code></td><td>many → to → one</td><td>NO ACTION</td><td>NO ACTION</td></tr><tr><td class="mono">FK_USER_RANK</td><td><code>RankId</code></td><td><a href="#tbl_RANK"><b>RANK</b></a></td><td><code>RankId</code></td><td>many → to → one</td><td>NO ACTION</td><td>NO ACTION</td></tr><tr><td class="mono">FK_USER_CENTER</td><td><code>CenterId</code></td><td><a href="#tbl_CENTER"><b>CENTER</b></a></td><td><code>CenterId</code></td><td>many → to → one</td><td>NO ACTION</td><td>NO ACTION</td></tr></tbody></table>
+
+  <h4 class="sub-h">⬅️ Referenced by (other tables → this table)</h4>
+  <div class="related">
+<a href="#tbl_HISTORY" title="FK_HISTORY_USER: UserId → ...">⬅️ HISTORY <span class="muted">(FK_HISTORY_USER)</span></a>
+<a href="#tbl_SESSION" title="FK_SESSION_USER: UserId → ...">⬅️ SESSION <span class="muted">(FK_SESSION_USER)</span></a>
+</div>
+
+  
+
+</section>
+
+  </section>
+</main>
+
+<a href="#top" class="floating-top" title="Back to top">↑</a>
+
+<footer class="footer">
+  Generated by erd_generator — single-file HTML ERD. Schemas parsed, not introspected — no DB connection required.
+</footer>
+
+<script>
+
+// Tiny helpers for the interactive ERD page.
+(function () {
+  // If we land on #tbl_X directly from outside the tab, scroll into view
+  // (browsers do this by default but the sticky topbar can overlap).
+  function reanchor() {
+    if (location.hash) {
+      var el = document.getElementById(location.hash.slice(1));
+      if (el && typeof el.scrollIntoView === 'function') {
+        setTimeout(function () { el.scrollIntoView({ block: 'start' }); }, 50);
+      }
+    }
+  }
+  window.addEventListener('load', reanchor);
+  window.addEventListener('hashchange', reanchor);
+
+  // Make sure SVG <a> clicks (which use xlink:href="#tbl_...") actually
+  // trigger smooth scroll on some browsers that treat SVG anchors oddly.
+  document.addEventListener('click', function (ev) {
+    var target = ev.target && ev.target.closest && ev.target.closest('a');
+    if (!target) return;
+    var href = target.getAttribute('href') || target.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+    if (href && href.charAt(0) === '#' && href.length > 1) {
+      var el = document.getElementById(href.slice(1));
+      if (el) {
+        ev.preventDefault();
+        history.pushState(null, '', href);
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
+})();
+
+</script>
+</body>
+</html>

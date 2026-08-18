@@ -107,6 +107,16 @@ public class AuthController : ControllerBase
 
         try
         {
+            var roleId = request.RoleId;
+            if (roleId <= 0)
+            {
+                var userRole = await _roleManager.FindByNameAsync("user");
+                if (userRole != null)
+                {
+                    roleId = userRole.Id;
+                }
+            }
+
             var createRequest = new CreateUserRequest
             {
                 FullName = request.FullName,
@@ -117,7 +127,7 @@ public class AuthController : ControllerBase
                 ConfirmPassword = request.ConfirmPassword,
                 UserTypeId = request.UserTypeId ?? 1,
                 AuthorityId = request.AuthorityId,
-                RoleId = request.RoleId
+                RoleId = roleId
             };
 
             var result = await _userService.AddAsync(createRequest, cancellationToken);
@@ -216,7 +226,7 @@ public class AuthController : ControllerBase
             return Unauthorized(new { Succeeded = false, Message = "المستخدم غير موجود" });
 
         var tokenData = await _tokenService.CreateTokenAsync(user, cancellationToken);
-        return Ok(new { Succeeded = true, User = tokenData.User });
+        return Ok(new { Succeeded = true, User = tokenData.User, Token = tokenData });
     }
 
     [HttpGet("roles")]
@@ -224,7 +234,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> GetRoles()
     {
         var roles = await _roleService.GetAllRolesAsync();
-        return Ok(new { Succeeded = true, Roles = roles });
+        return Ok(new { Succeeded = true, Data = roles });
     }
 
     [HttpGet("user-types")]

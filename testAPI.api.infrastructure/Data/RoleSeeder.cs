@@ -90,24 +90,66 @@ namespace testAPI.api.infrastructure.Data
                     await userManager.AddToRoleAsync(superAdminUser, "superadmin");
                 }
             }
+
+            // 5. Seed Admin Role with All Claims
+            var adminRole = await roleManager.FindByNameAsync("admin");
+            if (adminRole != null)
+            {
+                var existingAdminClaims = await roleManager.GetClaimsAsync(adminRole);
+                var existingAdminClaimTypes = existingAdminClaims.Select(c => c.Type).ToHashSet();
+
+                var allClaims = GetAllSystemClaims();
+                foreach (var claim in allClaims)
+                {
+                    if (!existingAdminClaimTypes.Contains(claim.Type))
+                    {
+                        await roleManager.AddClaimAsync(adminRole, claim);
+                    }
+                }
+            }
+
+            // 6. Seed Default Admin User
+            var adminEmail = "admin@testAPI.com";
+            var adminUser = await userManager.FindByEmailAsync(adminEmail)
+                ?? await userManager.FindByNameAsync("admin");
+
+            if (adminUser == null)
+            {
+                var adminUserType = await context.UserTypes.FirstOrDefaultAsync(ut => ut.TypeName == "أدمن")
+                    ?? await context.UserTypes.FirstOrDefaultAsync();
+
+                adminUser = new AppUser
+                {
+                    FullName = "Admin User",
+                    UserName = "admin",
+                    Email = adminEmail,
+                    EmailConfirmed = true,
+                    PhoneNumber = "0500000001",
+                    UserTypeId = adminUserType?.Id,
+                    isDeleted = false
+                };
+
+                var result = await userManager.CreateAsync(adminUser, "Admin@123456");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(adminUser, "admin");
+                }
+            }
+            else
+            {
+                if (!await userManager.IsInRoleAsync(adminUser, "admin"))
+                {
+                    await userManager.AddToRoleAsync(adminUser, "admin");
+                }
+            }
         }
 
         private static List<Claim> GetAllSystemClaims()
         {
             var list = new List<Claim>();
-            list.AddRange(ClaimStore.VisitClaimsList);
-            list.AddRange(ClaimStore.HistoryClaimsList);
-            list.AddRange(ClaimStore.CycleResultsClaimsList);
+            list.AddRange(ClaimStore.HomeClaimsList);
             list.AddRange(ClaimStore.RolesClaimsList);
             list.AddRange(ClaimStore.UsersClaimsList);
-            list.AddRange(ClaimStore.MessagesClaimsList);
-            list.AddRange(ClaimStore.CallClaimsList);
-            list.AddRange(ClaimStore.CycleClaimsList);
-            list.AddRange(ClaimStore.SettingsClaimsList);
-            list.AddRange(ClaimStore.WebsiteClaimsList);
-            list.AddRange(ClaimStore.ImprovementChance);
-            list.AddRange(ClaimStore.AuthorityReplyClaimsList);
-            list.AddRange(ClaimStore.AiTrainingClaimsList);
             return list;
         }
     }

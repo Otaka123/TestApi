@@ -17,13 +17,16 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
     });
 
-// Register HttpClient for AuthApiService
+// Register HttpClient for API Services
 var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7185/";
 builder.Services.AddHttpClient<IAuthApiService, AuthApiService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
+builder.Services.AddHttpClient<IRolesApiService, RolesApiService>(client => client.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<IUsersApiService, UsersApiService>(client => client.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<IRoleClaimsApiService, RoleClaimsApiService>(client => client.BaseAddress = new Uri(apiBaseUrl));
 
 var app = builder.Build();
 

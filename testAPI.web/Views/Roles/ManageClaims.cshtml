@@ -1,0 +1,200 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "إدارة صلاحيات الدور";
+    var roleId = ViewBag.RoleId;
+    var roleName = ViewBag.RoleName;
+    var roleClaimsModel = ViewBag.RoleClaims as JsonElement?;
+    var categories = ViewBag.AllClaimCategories as JsonElement?;
+}
+
+<div dir="rtl">
+    <div class="page-header">
+        <h2><i class="bi bi-shield-check"></i> الصلاحيات الخاصة بالدور: <span class="text-primary">@roleName</span></h2>
+    </div>
+
+    <div class="app-card">
+        <form id="claimsForm">
+            <input type="hidden" id="RoleId" value="@roleId" />
+            @Html.AntiForgeryToken()
+
+            <ul class="nav nav-tabs mt-2" id="claimsTabs" role="tablist">
+                <!-- Tabs generated dynamically -->
+            </ul>
+            <div class="tab-content mt-3 p-3 rounded" style="background: var(--bg); border: 1px solid var(--border);" id="claimsTabContent">
+                <!-- Content generated dynamically -->
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="button" class="btn btn-primary" id="saveBtn" onclick="saveClaims()">
+                    <i class="bi bi-check-lg"></i> حفظ التعديلات
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary" style="border-radius: 8px;">
+                    <i class="bi bi-arrow-right"></i> عودة للأدوار
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const roleId = @roleId;
+        const roleClaims = @Html.Raw(roleClaimsModel?.GetRawText() ?? "{}");
+        const allCategories = @Html.Raw(categories?.GetRawText() ?? "{}");
+
+        const categoryTranslations = {
+            "rolesClaims": "الأدوار",
+            "usersClaims": "المستخدمين"
+        };
+
+        if (allCategories.homeClaims) {
+            delete allCategories.homeClaims;
+        }
+
+        function renderTabs() {
+            const tabsList = document.getElementById('claimsTabs');
+            const tabContent = document.getElementById('claimsTabContent');
+            let isFirst = true;
+
+            for (const key in allCategories) {
+                if (!allCategories.hasOwnProperty(key)) continue;
+
+                const tabId = key;
+                const tabName = categoryTranslations[key] || key;
+                const claimsList = allCategories[key];
+
+                tabsList.innerHTML += `
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link ${isFirst ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" 
+                                data-bs-target="#${tabId}" type="button" role="tab">
+                            <i class="bi bi-check2-circle me-1"></i>${tabName}
+                        </button>
+                    </li>
+                `;
+
+                let claimsHtml = '<div class="row g-3">';
+                
+                claimsList.forEach((claim, index) => {
+                    const roleClaimsListKey = key.replace('Claims', 'ClaimsList');
+                    const roleClaimsList = roleClaims[roleClaimsListKey] || [];
+                    const matchingClaim = roleClaimsList.find(c => c.claimType === claim.type);
+                    const isSelected = matchingClaim ? matchingClaim.isSelected : false;
+
+                    claimsHtml += `
+                        <div class="col-md-4">
+                            <div class="card h-100" style="border: 1px solid var(--border); border-radius: 8px; background: var(--panel);">
+                                <div class="card-body p-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input claim-checkbox" 
+                                               type="checkbox" 
+                                               data-category="${key}" 
+                                               data-claim-type="${claim.type}" 
+                                               data-label="${claim.value}"
+                                               id="chk_${key}_${index}" 
+                                               ${isSelected ? 'checked' : ''}>
+                                        <label class="form-check-label fw-bold" for="chk_${key}_${index}">
+                                            <div style="color: var(--primary);">${claim.value}</div>
+                                            <small class="text-muted">${claim.type}</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                claimsHtml += '</div>';
+
+                tabContent.innerHTML += `
+                    <div class="tab-pane fade ${isFirst ? 'show active' : ''}" id="${tabId}" role="tabpanel">
+                        ${claimsHtml}
+                    </div>
+                `;
+
+                isFirst = false;
+            }
+        }
+
+        async function saveClaims() {
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+
+            const model = {
+                roleId: parseInt(roleId),
+                homeClaimsList: [],
+                rolesClaimsList: [],
+                usersClaimsList: []
+            };
+
+            document.querySelectorAll('input.claim-checkbox').forEach(chk => {
+                const category = chk.getAttribute('data-category');
+                const claimType = chk.getAttribute('data-claim-type');
+                const label = chk.getAttribute('data-label');
+                
+                const claimObj = {
+                    claimType: claimType,
+                    label: label,
+                    isSelected: chk.checked
+                };
+
+                if (category === 'rolesClaims') {
+                    model.rolesClaimsList.push(claimObj);
+                } else if (category === 'usersClaims') {
+                    model.usersClaimsList.push(claimObj);
+                }
+            });
+
+            model.homeClaimsList.push({
+                claimType: "ViewHome",
+                label: "عرض الصفحة الرئيسية",
+                isSelected: true
+            });
+
+            try {
+                const response = await fetch('@Url.Action("UpdateClaims", "Roles")?id=' + roleId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(model)
+                });
+
+                const result = await response.json();
+
+                if (result.succeeded) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم بنجاح',
+                        text: result.message || 'تم تحديث الصلاحيات بنجاح',
+                        confirmButtonText: 'حسناً'
+                    }).then(() => {
+                        window.location.href = '@Url.Action("Index", "Roles")';
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: result.message || 'حدث خطأ أثناء الحفظ',
+                        confirmButtonText: 'حسناً'
+                    });
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ',
+                    text: 'حدث خطأ في الاتصال بالخادم',
+                    confirmButtonText: 'حسناً'
+                });
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="bi bi-check-lg"></i> حفظ التعديلات';
+            }
+        }
+
+        renderTabs();
+    </script>
+}

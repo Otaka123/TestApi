@@ -75,7 +75,7 @@ public class UsersController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = AuthorizationPolicies.CreateUserPolicy)]
-    public async Task<IActionResult> Create([FromForm] CreateUserRequest request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid)
             return BadRequest(new { Succeeded = false, Message = "بيانات غير صالحة" });
@@ -102,7 +102,7 @@ public class UsersController : ControllerBase
 
     [HttpPut("{id:int}")]
     [Authorize(Policy = AuthorizationPolicies.EditUserPolicy)]
-    public async Task<IActionResult> Update(int id, [FromForm] EditUserDto request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Update(int id, [FromBody] EditUserDto request, CancellationToken cancellationToken = default)
     {
         if (id != request.Id)
             return BadRequest(new { Succeeded = false, Message = "المعرف غير متطابق" });

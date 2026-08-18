@@ -117,75 +117,14 @@ public class Program
                 .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("DeleteRole"))
             .AddPolicy(AuthorizationPolicies.ManageRoleClaimsPolicy, p => p
                 .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ManageRoleClaims"))
-            .AddPolicy(AuthorizationPolicies.ViewVisitPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewVisit"))
-            .AddPolicy(AuthorizationPolicies.AddVisitPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("AddVisit"))
-            .AddPolicy(AuthorizationPolicies.EditVisitPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("EditVisit"))
-            .AddPolicy(AuthorizationPolicies.DeleteVisitPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("DeleteVisit"))
-            .AddPolicy(AuthorizationPolicies.ViewVisitEvaluationPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewVisitEvaluation"))
-            .AddPolicy(AuthorizationPolicies.CreateVisitEvaluationPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("CreateVisitEvaluation"))
-            .AddPolicy(AuthorizationPolicies.EditVisitEvaluationPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("EditVisitEvaluation"))
-            .AddPolicy(AuthorizationPolicies.SignatureVisitPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("SignatureVisit", "signVisit"))
-            .AddPolicy(AuthorizationPolicies.ViewCallPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewCall"))
-            .AddPolicy(AuthorizationPolicies.AddCallPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("AddCall"))
-            .AddPolicy(AuthorizationPolicies.EditCallPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("EditCall"))
-            .AddPolicy(AuthorizationPolicies.DeleteCallPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("DeleteCall"))
-            .AddPolicy(AuthorizationPolicies.ViewCallEvaluationPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewCallEvaluation"))
-            .AddPolicy(AuthorizationPolicies.CreateCallEvaluationPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("CreateCallEvaluation"))
-            .AddPolicy(AuthorizationPolicies.EditCallEvaluationPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("EditCallEvaluation"))
-            .AddPolicy(AuthorizationPolicies.SignatureCallPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("SignatureCall", "SignCall"))
-            .AddPolicy(AuthorizationPolicies.ViewWebsitePolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewWebsite"))
-            .AddPolicy(AuthorizationPolicies.AddWebsitePolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("AddWebsite"))
-            .AddPolicy(AuthorizationPolicies.EditWebsitePolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("EditWebsite"))
-            .AddPolicy(AuthorizationPolicies.DeleteWebsitePolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("DeleteWebsite"))
-            .AddPolicy(AuthorizationPolicies.CreateWebSiteEvaluationPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("CreateWebSiteEvaluation"))
-            .AddPolicy(AuthorizationPolicies.ViewCyclePolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewCycle"))
-            .AddPolicy(AuthorizationPolicies.CreateCyclePolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("CreateCycle"))
-            .AddPolicy(AuthorizationPolicies.EditCyclePolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("EditCycle"))
-            .AddPolicy(AuthorizationPolicies.DeleteCyclePolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("DeleteCycle"))
-            .AddPolicy(AuthorizationPolicies.ViewGeneralSettingsPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewGeneralSettings"))
-            .AddPolicy(AuthorizationPolicies.EditGeneralSettingsPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("EditGeneralSettings"))
-            .AddPolicy(AuthorizationPolicies.ViewMessagesPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewMessages"))
-            .AddPolicy(AuthorizationPolicies.SendMessagesPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("SendMessages"))
-            .AddPolicy(AuthorizationPolicies.ViewHistoryPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewHistory"))
+            // صلاحيات الصفحة الرئيسية
             .AddPolicy(AuthorizationPolicies.ViewHomePolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewHome"))
-            .AddPolicy(AuthorizationPolicies.ViewChartsPolicy, p => p
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewCharts"));
+                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme).RequireClaim("ViewHome"));
 
         builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("SmsSettings"));
         builder.Services.Configure<SecurityStampValidatorOptions>(options =>
         {
-            options.ValidationInterval = TimeSpan.FromMinutes(10);
+            options.ValidationInterval = TimeSpan.FromSeconds(30); // تحديث كل 30 ثانية
         });
 
         // ✅ استخدام المشاريع المستقلة الجديدة فقط

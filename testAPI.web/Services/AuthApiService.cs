@@ -100,4 +100,30 @@ public class AuthApiService : IAuthApiService
             };
         }
     }
+
+    public async Task<AuthResultDto> GetCurrentUserAsync(string token, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "api/Auth/me");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<AuthResultDto>(_jsonOptions, cancellationToken);
+                return result ?? new AuthResultDto { Succeeded = false, Message = "فشل تحليل الاستجابة" };
+            }
+
+            return new AuthResultDto { Succeeded = false, Message = "فشل في جلب بيانات المستخدم" };
+        }
+        catch (Exception ex)
+        {
+            return new AuthResultDto
+            {
+                Succeeded = false,
+                Message = $"خطأ أثناء جلب بيانات المستخدم: {ex.Message}"
+            };
+        }
+    }
 }
