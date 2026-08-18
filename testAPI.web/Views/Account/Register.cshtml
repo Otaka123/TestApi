@@ -1,0 +1,93 @@
+@model testAPI.api.domain.DTOs.Auth.RegisterRequestDto
+@{
+    ViewData["Title"] = "إنشاء حساب جديد";
+}
+
+<div class="container py-5" dir="rtl">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-person-plus fs-2">👤</i>
+                        </div>
+                        <h3 class="fw-bold">تسجيل حساب جديد</h3>
+                        <p class="text-muted small">أدخل البيانات التالية لإنشاء حساب جديد</p>
+                    </div>
+
+                    <form asp-action="Register" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="FullName" class="form-control rounded-3" id="floatingFullName" placeholder="الاسم الكامل" />
+                                    <label for="floatingFullName">الاسم الكامل</label>
+                                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="Username" class="form-control rounded-3" id="floatingUsername" placeholder="اسم المستخدم" />
+                                    <label for="floatingUsername">اسم المستخدم</label>
+                                    <span asp-validation-for="Username" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="Email" type="email" class="form-control rounded-3" id="floatingEmail" placeholder="البريد الإلكتروني" />
+                                    <label for="floatingEmail">البريد الإلكتروني</label>
+                                    <span asp-validation-for="Email" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="PhoneNumber" class="form-control rounded-3" id="floatingPhone" placeholder="رقم الهاتف" />
+                                    <label for="floatingPhone">رقم الهاتف</label>
+                                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="Password" type="password" class="form-control rounded-3" id="floatingPassword" placeholder="كلمة المرور" />
+                                    <label for="floatingPassword">كلمة المرور</label>
+                                    <span asp-validation-for="Password" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input asp-for="ConfirmPassword" type="password" class="form-control rounded-3" id="floatingConfirmPassword" placeholder="تأكيد كلمة المرور" />
+                                    <label for="floatingConfirmPassword">تأكيد كلمة المرور</label>
+                                    <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <input type="hidden" asp-for="RoleId" value="2" />
+                        <input type="hidden" asp-for="UserTypeId" value="1" />
+
+                        <button type="submit" class="btn btn-success w-100 py-3 rounded-3 fw-bold fs-5 shadow-sm mb-3">
+                            إنشاء الحساب
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <span class="text-muted">لديك حساب بالفعل؟</span>
+                            <a asp-action="Login" class="text-decoration-none fw-bold ms-1">تسجيل الدخول</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

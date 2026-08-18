@@ -1,0 +1,67 @@
+@model testAPI.api.domain.DTOs.Auth.LoginRequestDto
+@{
+    ViewData["Title"] = "تسجيل الدخول";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+
+<div class="container py-5" dir="rtl">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-person-lock fs-2">🔑</i>
+                        </div>
+                        <h3 class="fw-bold">تسجيل الدخول</h3>
+                        <p class="text-muted small">قم بإدخال بياناتك للدخول إلى حسابك</p>
+                    </div>
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Login" asp-route-returnUrl="@returnUrl" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Username" class="form-control rounded-3" id="floatingUsername" placeholder="اسم المستخدم" autocomplete="username" />
+                            <label for="floatingUsername">اسم المستخدم</label>
+                            <span asp-validation-for="Username" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Password" type="password" class="form-control rounded-3" id="floatingPassword" placeholder="كلمة المرور" autocomplete="current-password" />
+                            <label for="floatingPassword">كلمة المرور</label>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="RememberMe" class="form-check-input" id="rememberMeCheck" />
+                            <label class="form-check-label text-secondary" for="rememberMeCheck">
+                                تذكرني على هذا الجهاز
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold fs-5 shadow-sm mb-3">
+                            تسجيل الدخول
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <span class="text-muted">ليس لديك حساب؟</span>
+                            <a asp-action="Register" class="text-decoration-none fw-bold ms-1">إنشاء حساب جديد</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
